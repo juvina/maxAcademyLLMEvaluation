@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from langsmith import traceable
 from langsmith.wrappers import wrap_openai
 from openai import OpenAI
+from prompts import SYSTEM_PROMPT
 
 # Load environment variables
 load_dotenv()
@@ -34,6 +35,9 @@ model_kwargs = {
     "max_tokens": 500
 }
 
+#allow toggle of system prompt
+
+ENABLE_SYSTEM_PROMPT = True
 
 @traceable
 @cl.on_message
@@ -41,7 +45,12 @@ async def on_message(message: cl.Message):
     # Maintain an array of messages in the user session
     message_history = cl.user_session.get("message_history", [])
 
-    # Processing images if they exist
+    # add system prompt in history if not exists
+    if ENABLE_SYSTEM_PROMPT and (not message_history or message_history[0].get("role") != "system"):
+        system_prompt_content = SYSTEM_PROMPT
+        message_history.insert(0, {"role": "system", "content": system_prompt_content})
+
+# Processing images if they exist
     images = [file for file in message.elements if "image" in file.mime] if message.elements else []
 
     if images:
